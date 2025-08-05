@@ -6,7 +6,7 @@ using Google Earth Engine data to show before/after conditions and fire impact.
 """
 
 import streamlit as st
-import geemap.foliumap as geemap
+import geemap
 import ee
 import pandas as pd
 from datetime import datetime, timedelta
