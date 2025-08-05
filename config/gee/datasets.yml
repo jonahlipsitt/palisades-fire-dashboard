@@ -1,0 +1,195 @@
+# Google Earth Engine Dataset Configurations
+# Configured specifically for Palisades Fire Before/After Analysis
+
+# Focus area: Pacific Palisades, Los Angeles
+# Fire coordinates: 34.0725°N, 118.5425°W
+# Fire dates: January 7, 2025 - ongoing
+
+datasets:
+  
+  # === SATELLITE IMAGERY ===
+  landsat8:
+    collection_id: "LANDSAT/LC08/C02/T1_L2"
+    description: "Landsat 8 Collection 2 Tier 1 Level-2"
+    bands:
+      visible: ["SR_B4", "SR_B3", "SR_B2"]  # RGB
+      nir: ["SR_B5"]
+      swir: ["SR_B6", "SR_B7"]
+      thermal: ["ST_B10"]
+    visualization:
+      min: 0.0
+      max: 0.3
+      gamma: 1.4
+    cloud_filter: "CLOUD_COVER < 20"
+    
+  landsat9:
+    collection_id: "LANDSAT/LC09/C02/T1_L2"
+    description: "Landsat 9 Collection 2 Tier 1 Level-2"
+    bands:
+      visible: ["SR_B4", "SR_B3", "SR_B2"]
+      nir: ["SR_B5"]
+      swir: ["SR_B6", "SR_B7"]
+      thermal: ["ST_B10"]
+    visualization:
+      min: 0.0
+      max: 0.3
+      gamma: 1.4
+    cloud_filter: "CLOUD_COVER < 20"
+    
+  sentinel2:
+    collection_id: "COPERNICUS/S2_SR_HARMONIZED"
+    description: "Sentinel-2 MSI Surface Reflectance (Harmonized)"
+    bands:
+      visible: ["B4", "B3", "B2"]  # RGB
+      nir: ["B8"]
+      red_edge: ["B5", "B6", "B7", "B8A"]
+      swir: ["B11", "B12"]
+    visualization:
+      min: 0.0
+      max: 3000
+      gamma: 1.4
+    cloud_filter: "CLOUDY_PIXEL_PERCENTAGE < 20"
+    
+  modis_ndvi:
+    collection_id: "MODIS/061/MOD13Q1"
+    description: "MODIS Vegetation Indices 16-Day 250m"
+    bands:
+      ndvi: ["NDVI"]
+      evi: ["EVI"]
+    visualization:
+      min: 0.0
+      max: 9000
+      palette: ["FFFFFF", "CE7E45", "DF923D", "F1B555", "FCD163", "99B718", "74A901", "66A000", "529400", "3E8601", "207401", "056201", "004C00", "023B01", "012E01", "011D01", "011301"]
+    scale_factor: 0.0001
+
+  # === FIRE-SPECIFIC INDICES ===
+  fire_indices:
+    description: "Key spectral indices for fire analysis"
+    indices:
+      nbr: "Normalized Burn Ratio (NIR - SWIR) / (NIR + SWIR)"
+      dnbr: "Difference NBR (NBR_before - NBR_after)"
+      ndvi: "Normalized Difference Vegetation Index (NIR - Red) / (NIR + Red)"
+      ndwi: "Normalized Difference Water Index (Green - NIR) / (Green + NIR)"
+      bai: "Burn Area Index: 1 / ((0.1 - Red)^2 + (0.06 - NIR)^2)"
+      nbr2: "Normalized Burn Ratio 2 (SWIR1 - SWIR2) / (SWIR1 + SWIR2)"
+    thresholds:
+      burn_severity:
+        unburned_low: -0.1
+        low_severity: 0.1
+        moderate_low: 0.27
+        moderate_high: 0.44
+        high_severity: 0.66
+        
+  gridmet:
+    collection_id: "IDAHO_EPSCOR/GRIDMET"
+    description: "GridMET: University of Idaho Gridded Surface Meteorological Dataset"
+    bands:
+      temperature_max: ["tmmx"]
+      temperature_min: ["tmmn"]
+      precipitation: ["pr"]
+      humidity: ["rmax", "rmin"]
+      wind: ["vs"]
+    visualization:
+      temperature:
+        min: 250
+        max: 320
+        palette: ["blue", "cyan", "yellow", "orange", "red"]
+
+  # === ELEVATION DATA ===
+  srtm:
+    collection_id: "USGS/SRTMGL1_003"
+    description: "NASA SRTM Digital Elevation 30m"
+    bands:
+      elevation: ["elevation"]
+    visualization:
+      min: 0
+      max: 6000
+      palette: ["006633", "E5FFCC", "662A00", "D8D8D8", "F5F5F5"]
+
+  # === LAND COVER ===
+  dynamic_world:
+    collection_id: "GOOGLE/DYNAMICWORLD/V1"
+    description: "Dynamic World V1"
+    bands:
+      classification: ["label"]
+      confidence: ["label_confidence"]
+    visualization:
+      min: 0
+      max: 8
+      palette: ["#419BDF", "#397D49", "#88B053", "#7A87C6", "#E49635", "#DFC35A", "#C4281B", "#A59B8F", "#B39FE1"]
+    classes:
+      0: "water"
+      1: "trees"
+      2: "grass"
+      3: "flooded_vegetation"
+      4: "crops"
+      5: "shrub_and_scrub"
+      6: "built"
+      7: "bare"
+      8: "snow_and_ice"
+
+  esa_worldcover:
+    collection_id: "ESA/WorldCover/v100"
+    description: "ESA WorldCover 10m v100"
+    bands:
+      landcover: ["Map"]
+    visualization:
+      min: 10
+      max: 95
+      palette: ["006400", "ffbb22", "ffff4c", "f096ff", "fa0000", "b4b4b4", "f0f0f0", "0064c8", "0096a0", "00cf75", "fae6a0"]
+
+  # === ADMINISTRATIVE BOUNDARIES ===
+  countries:
+    collection_id: "USDOS/LSIB_SIMPLE/2017"
+    description: "World Country Boundaries"
+    property_filters:
+      - "country_na != null"
+    
+  us_states:
+    collection_id: "TIGER/2018/States"
+    description: "US Census States"
+    
+  global_admin:
+    collection_id: "FAO/GAUL/2015/level1"
+    description: "Global Administrative Unit Layers 2015, First-Level Administrative Units"
+
+# === PROCESSING PARAMETERS ===
+processing:
+  default_scale: 30
+  max_pixels: 1e9
+  default_crs: "EPSG:4326"
+  
+  # Cloud masking functions
+  cloud_masks:
+    landsat8: "qa_pixel"
+    landsat9: "qa_pixel"
+    sentinel2: "cloud_probability"
+    
+  # Common indices calculations
+  indices:
+    ndvi:
+      formula: "(NIR - RED) / (NIR + RED)"
+      scale: [-1, 1]
+    ndwi:
+      formula: "(GREEN - NIR) / (GREEN + NIR)"
+      scale: [-1, 1]
+    nbr:
+      formula: "(NIR - SWIR2) / (NIR + SWIR2)"
+      scale: [-1, 1]
+
+# === EXPORT SETTINGS ===
+exports:
+  default_format: "GeoTIFF"
+  default_folder: "gee_exports"
+  max_file_size: "2GB"
+  
+  drive_export:
+    folder: "EarthEngine"
+    max_pixels: 1e9
+    
+  asset_export:
+    pyramid_policy: "mean"
+    
+  cloud_storage:
+    bucket: "your-gcs-bucket"
+    file_prefix: "gee_exports/"

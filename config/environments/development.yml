@@ -1,0 +1,50 @@
+# Development Environment Configuration
+
+# Application Settings
+app:
+  debug: true
+  log_level: DEBUG
+  hot_reload: true
+  profiling: false
+
+# Google Earth Engine
+gee:
+  use_service_account: false
+  high_volume_endpoint: false
+  cache_enabled: true
+  cache_timeout: 3600
+
+# Dashboard Settings
+dashboard:
+  title: "GEE Dashboard (Development)"
+  host: "localhost"
+  port: 8501
+  auto_refresh: true
+  show_debug_info: true
+
+# Data Processing
+processing:
+  max_pixels: 1e8
+  default_scale: 100  # Faster for development
+  timeout: 300
+  parallel_workers: 2
+
+# Visualization
+visualization:
+  map_center: [40.0, -100.0]
+  map_zoom: 4
+  chart_theme: "default"
+  high_dpi: false
+
+# Performance
+performance:
+  cache_dir: "inputs/processed/cache"
+  memory_limit: "2GB"
+  lazy_loading: true
+
+# Logging
+logging:
+  level: DEBUG
+  file: "logs/development.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

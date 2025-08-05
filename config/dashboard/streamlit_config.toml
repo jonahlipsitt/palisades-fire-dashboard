@@ -1,0 +1,57 @@
+[global]
+# Global configuration for Streamlit dashboard
+
+# Development settings
+developmentMode = true
+showWarningOnDirectExecution = false
+
+[logger]
+# Logging configuration
+level = "info"
+messageFormat = "%(asctime)s %(message)s"
+
+[client]
+# Client-side settings
+showErrorDetails = true
+toolbarMode = "developer"
+caching = true
+
+[server]
+# Server configuration
+headless = false
+runOnSave = true
+allowRunOnSave = true
+port = 8501
+baseUrlPath = ""
+enableCORS = false
+enableXsrfProtection = true
+maxUploadSize = 200
+maxMessageSize = 200
+enableWebsocketCompression = false
+
+[browser]
+# Browser settings
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+
+[theme]
+# Dashboard theme
+primaryColor = "#FF6B6B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans serif"
+
+[runner]
+# Code execution settings
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+postScriptGC = true
+fastReruns = true
+enforceSerializableSessionState = false
+
+[mapbox]
+# Mapbox configuration (if using)
+# token = "your_mapbox_token_here"

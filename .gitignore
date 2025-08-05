@@ -1,0 +1,156 @@
+# Google Earth Engine Dashboard .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
+
+# Google Earth Engine Authentication
+.config/earthengine/
+earthengine-*.json
+service-account-*.json
+gee-credentials.json
+
+# Google Cloud
+google-credentials.json
+.gcloud/
+gcp-key.json
+
+# Environment Variables
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+*.env
+
+# Data Files (large files should be in inputs/ but not committed)
+inputs/raw/large_datasets/
+inputs/raw/satellite_imagery/
+inputs/processed/cache/
+outputs/exports/
+outputs/tiles/
+*.tif
+*.nc
+*.hdf
+*.he5
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Cache
+.cache/
+cache/
+*.cache
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Build artifacts
+*.tar.gz
+*.zip
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Large output files
+outputs/figures/*.png
+outputs/figures/*.jpg
+outputs/figures/*.svg
+outputs/reports/*.pdf
+outputs/animations/*.gif
+outputs/animations/*.mp4
+
+# Docker
+.dockerignore
+
+# Cloud deployment secrets
+deploy/cloud/*/secrets/
+deploy/cloud/*/credentials/
+
+# Backup files
+*.bak
+*.backup
+
+# Config files with sensitive data
+config/environments/production.yml
+config/environments/staging.yml
+config/secrets/
+
+# Allow specific files
+!.gitkeep
+!README.md
+!.env.example

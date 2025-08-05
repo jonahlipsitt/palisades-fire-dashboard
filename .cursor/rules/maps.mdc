@@ -1,0 +1,475 @@
+---
+description: Best practices for developing interactive dashboards with Google Earth Engine Python API, including environment setup, project structure, data handling, and deployment patterns.
+globs: ["**/*.py", "**/*.ipynb", "**/requirements.txt", "**/environment.yml", "**/README.md"]
+alwaysApply: false
+---
+
+# Google Earth Engine Interactive Dashboard Development Guidelines
+
+## Environment Management
+
+### Python Environment Setup
+- Use **conda** for environment management (preferred over pip for GEE projects)
+- Create dedicated environments per project to avoid dependency conflicts
+- Set PROJ_DATA or PROJ_LIB environment variables to avoid PROJ data directory errors
+- Use environment.yml files for reproducible environments
+
+```yaml
+# environment.yml template
+name: gee-dashboard
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.8,<3.12
+  - earthengine-api
+  - geemap
+  - ipywidgets
+  - folium
+  - streamlit
+  - plotly
+  - altair
+  - pandas
+  - geopandas
+  - xarray
+  - jupyter
+  - pip
+  - pip:
+    - pydeck
+    - voila
+```
+
+### Key Package Ecosystem
+- **earthengine-api**: Core GEE Python client
+- **geemap**: Interactive mapping and visualization
+- **ipywidgets**: Interactive notebook widgets  
+- **folium**: Lightweight web maps
+- **streamlit**: Web app framework for dashboards
+- **voila**: Convert notebooks to web applications
+- **plotly/altair**: Interactive charting
+- **pandas/geopandas**: Data manipulation
+- **xarray**: N-dimensional data analysis
+
+## Project Structure
+
+### Recommended Directory Layout
+```
+project-name/
+├── src/
+│   ├── auth/
+│   │   ├── __init__.py
+│   │   └── gee_auth.py          # Authentication utilities
+│   ├── data/
+│   │   ├── __init__.py
+│   │   ├── loaders.py           # Data loading functions
+│   │   └── processors.py       # Data processing utilities
+│   ├── visualizations/
+│   │   ├── __init__.py
+│   │   ├── maps.py              # Map visualization functions
+│   │   └── charts.py            # Chart creation functions
+│   ├── dashboards/
+│   │   ├── __init__.py
+│   │   ├── streamlit_app.py     # Main dashboard app
+│   │   └── components.py        # Reusable UI components
+│   └── utils/
+│       ├── __init__.py
+│       ├── constants.py         # Project constants
+│       └── helpers.py           # Helper functions
+├── notebooks/
+│   ├── exploration/             # Data exploration notebooks
+│   ├── prototypes/              # Dashboard prototypes
+│   └── documentation/           # Analysis documentation
+├── tests/
+├── data/                        # Local data cache
+├── exports/                     # GEE export outputs
+├── environment.yml
+├── requirements.txt
+├── .env.example                 # Environment variables template
+├── .gitignore
+└── README.md
+```
+
+### File Naming Conventions
+- Use snake_case for Python files
+- Prefix notebooks with numbers for ordering (01_data_exploration.ipynb)
+- Use descriptive names for dashboard components
+- Separate concerns: data, visualization, UI, authentication
+
+## Authentication & Initialization
+
+### Service Account Setup (Production)
+- Use service accounts for deployed applications
+- Store credentials securely (never in code)
+- Set up proper IAM permissions for GEE access
+
+```python
+# gee_auth.py
+import ee
+import os
+from pathlib import Path
+
+def initialize_ee(project_id=None, use_service_account=False):
+    """Initialize Earth Engine with proper authentication."""
+    
+    # Always set PROJ_DATA to avoid projection issues
+    import pyproj
+    pyproj.datadir.set_data_dir()
+    
+    if use_service_account:
+        # Production: service account
+        credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        if not credentials_path:
+            raise ValueError("Service account credentials not found")
+        
+        credentials = ee.ServiceAccountCredentials(
+            email=None,  # Will be read from credentials file
+            key_file=credentials_path
+        )
+        ee.Initialize(credentials, project=project_id)
+    else:
+        # Development: user authentication
+        ee.Authenticate()
+        ee.Initialize(project=project_id)
+```
+
+### Environment Variables
+```bash
+# .env
+GEE_PROJECT_ID=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
+PROJ_DATA=/path/to/proj/data
+```
+
+## Data Management
+
+### Efficient Data Loading
+```python
+# data/loaders.py
+import ee
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def load_landsat_collection(start_date, end_date, bounds=None):
+    """Load and cache Landsat collection with cloud filtering."""
+    collection = (ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate(start_date, end_date)
+                  .filter(ee.Filter.lt('CLOUD_COVER', 20)))
+    
+    if bounds:
+        collection = collection.filterBounds(bounds)
+    
+    return collection
+
+def create_cloud_free_composite(collection, bounds):
+    """Create cloud-free composite with proper error handling."""
+    try:
+        composite = collection.median().clip(bounds)
+        return composite
+    except ee.EEException as e:
+        print(f"Earth Engine error: {e}")
+        return None
+```
+
+### Data Export Patterns
+```python
+# data/processors.py
+import ee
+
+def export_to_drive(image, description, folder='gee_exports', scale=30):
+    """Export image to Google Drive with standardized parameters."""
+    task = ee.batch.Export.image.toDrive(
+        image=image,
+        description=description,
+        folder=folder,
+        scale=scale,
+        maxPixels=1e9,
+        crs='EPSG:4326'
+    )
+    task.start()
+    return task
+
+def export_to_asset(image, asset_id, description):
+    """Export image to Earth Engine Asset."""
+    task = ee.batch.Export.image.toAsset(
+        image=image,
+        description=description,
+        assetId=asset_id,
+        scale=30,
+        maxPixels=1e9
+    )
+    task.start()
+    return task
+```
+
+## Interactive Visualization
+
+### Map Components
+```python
+# visualizations/maps.py
+import geemap
+import folium
+
+def create_base_map(center=[0, 0], zoom=2, basemap='HYBRID'):
+    """Create standardized base map."""
+    m = geemap.Map(center=center, zoom=zoom)
+    m.add_basemap(basemap)
+    return m
+
+def add_layer_with_legend(map_obj, ee_object, vis_params, name, legend_dict=None):
+    """Add layer with automatic legend."""
+    map_obj.addLayer(ee_object, vis_params, name)
+    
+    if legend_dict:
+        map_obj.add_legend(legend_dict=legend_dict, title=name)
+    
+    return map_obj
+
+def create_time_series_inspector(image_collection, vis_params):
+    """Create time series inspector widget."""
+    m = geemap.Map()
+    m.ts_inspector(
+        left_ts=image_collection,
+        left_vis=vis_params,
+        width='48%'
+    )
+    return m
+```
+
+### Chart Components
+```python
+# visualizations/charts.py
+import altair as alt
+import plotly.express as px
+
+def create_time_series_chart(df, x_col, y_col, color_col=None):
+    """Create interactive time series chart with Altair."""
+    chart = alt.Chart(df).mark_line(point=True).encode(
+        x=alt.X(f'{x_col}:T', title=x_col.replace('_', ' ').title()),
+        y=alt.Y(f'{y_col}:Q', title=y_col.replace('_', ' ').title()),
+        color=alt.Color(f'{color_col}:N') if color_col else alt.value('steelblue'),
+        tooltip=list(df.columns)
+    ).interactive()
+    
+    return chart
+
+def create_histogram(ee_image, scale=1000, max_pixels=1e6):
+    """Create histogram from Earth Engine image."""
+    histogram = geemap.image_histogram(
+        ee_image,
+        scale=scale,
+        max_pixels=max_pixels,
+        return_df=True
+    )
+    return histogram
+```
+
+## Dashboard Development
+
+### Streamlit Application Structure
+```python
+# dashboards/streamlit_app.py
+import streamlit as st
+import geemap.foliumap as geemap
+from src.auth.gee_auth import initialize_ee
+from src.data.loaders import load_landsat_collection
+from src.visualizations.maps import create_base_map
+
+# Configure page
+st.set_page_config(
+    page_title="GEE Dashboard",
+    page_icon="🌍",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+@st.cache_resource
+def init_earth_engine():
+    """Initialize Earth Engine with caching."""
+    project_id = st.secrets.get("GEE_PROJECT_ID", "your-project-id")
+    initialize_ee(project_id=project_id)
+    return True
+
+def main():
+    st.title("🌍 Earth Engine Interactive Dashboard")
+    
+    # Initialize GEE
+    init_earth_engine()
+    
+    # Sidebar controls
+    with st.sidebar:
+        st.header("Controls")
+        start_date = st.date_input("Start Date")
+        end_date = st.date_input("End Date")
+        
+    # Main content
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("Interactive Map")
+        m = create_base_map()
+        # Add your layers here
+        map_data = st_folium(m, width=700, height=500)
+    
+    with col2:
+        st.subheader("Analysis Results")
+        # Add charts and statistics here
+
+if __name__ == "__main__":
+    main()
+```
+
+### Voila for Notebook Dashboards
+```python
+# notebooks/dashboard.ipynb
+import ipywidgets as widgets
+from IPython.display import display
+import geemap
+
+# Create interactive widgets
+date_picker = widgets.DatePicker(description='Start Date')
+map_widget = geemap.Map()
+
+# Widget interaction
+def update_map(change):
+    # Update map based on widget values
+    pass
+
+date_picker.observe(update_map, names='value')
+
+# Display dashboard
+dashboard = widgets.VBox([
+    widgets.HBox([date_picker]),
+    map_widget
+])
+display(dashboard)
+```
+
+## Performance Optimization
+
+### Caching Strategies
+- Use @st.cache_resource for Earth Engine initialization
+- Cache expensive computations with @lru_cache
+- Implement client-side caching for repeated queries
+- Use Earth Engine's built-in caching for assets
+
+### Data Transfer Optimization
+- Use server-side reductions to minimize data transfer
+- Export large computations to assets for reuse
+- Implement proper scale and maxPixels parameters
+- Use efficient data formats (GeoTIFF, Parquet)
+
+### Memory Management
+```python
+# utils/memory.py
+import gc
+import psutil
+
+def monitor_memory():
+    """Monitor memory usage for debugging."""
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    return {
+        'rss': memory_info.rss / 1024 / 1024,  # MB
+        'vms': memory_info.vms / 1024 / 1024   # MB
+    }
+
+def cleanup_ee_objects():
+    """Force garbage collection for Earth Engine objects."""
+    gc.collect()
+```
+
+## Error Handling & Debugging
+
+### Robust Error Handling
+```python
+# utils/error_handling.py
+import ee
+import functools
+import logging
+
+def ee_exception_handler(func):
+    """Decorator for handling Earth Engine exceptions."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ee.EEException as e:
+            logging.error(f"Earth Engine error in {func.__name__}: {e}")
+            return None
+        except Exception as e:
+            logging.error(f"General error in {func.__name__}: {e}")
+            return None
+    return wrapper
+
+@ee_exception_handler
+def safe_image_load(image_id):
+    """Safely load Earth Engine image."""
+    return ee.Image(image_id)
+```
+
+### Logging Configuration
+```python
+# utils/logging_config.py
+import logging
+import sys
+
+def setup_logging(level=logging.INFO):
+    """Configure logging for the application."""
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler('app.log')
+        ]
+    )
+```
+
+## Deployment Patterns
+
+### Local Development
+- Use Jupyter notebooks for prototyping
+- Run Streamlit locally for testing: `streamlit run dashboard.py`
+- Use Voila for notebook-to-app conversion
+
+### Production Deployment
+- **Streamlit Cloud**: For public dashboards
+- **Google Cloud Run**: For scalable containerized apps
+- **Heroku**: For simple web applications
+- **GitHub Pages**: For static visualizations
+
+### Security Considerations
+- Never commit authentication credentials
+- Use environment variables for sensitive data
+- Implement proper access controls for production apps
+- Validate user inputs to prevent injection attacks
+
+## Testing & Documentation
+
+### Unit Testing
+```python
+# tests/test_data_loaders.py
+import unittest
+from src.data.loaders import load_landsat_collection
+
+class TestDataLoaders(unittest.TestCase):
+    def test_landsat_loading(self):
+        collection = load_landsat_collection('2020-01-01', '2020-02-01')
+        self.assertIsNotNone(collection)
+```
+
+### Documentation Standards
+- Include docstrings for all functions
+- Maintain README with setup instructions
+- Document API endpoints and parameters
+- Provide example usage in notebooks
+
+## Best Practices Summary
+
+1. **Environment**: Use conda, set PROJ_DATA, maintain environment.yml
+2. **Structure**: Organize code by function (data, viz, dashboard, auth)
+3. **Authentication**: Use service accounts for production
+4. **Performance**: Cache computations, optimize data transfer
+5. **Error Handling**: Implement robust exception handling
+6. **Security**: Never commit credentials, validate inputs
+7. **Testing**: Write unit tests, document thoroughly
+8. **Deployment**: Plan for scalability and monitoring
