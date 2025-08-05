@@ -1,0 +1,10 @@
+# Streamlit Cloud specific requirements
+streamlit>=1.28.0
+earthengine-api>=0.1.384
+google-auth>=2.22.0
+folium>=0.14.0
+streamlit-folium>=0.15.0
+pandas>=2.0.0
+
+# Try lightweight geemap installation
+geemap

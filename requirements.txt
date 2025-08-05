@@ -1,23 +1,8 @@
-# Palisades Fire Dashboard - Streamlit Cloud Deployment Requirements
-
-# Dashboard framework
-streamlit>=1.28.0
-
-# Google Earth Engine
-earthengine-api>=0.1.384
-google-auth>=2.22.0
-google-api-python-client>=2.0.0
-
-# Geospatial and mapping - specific versions that work on Streamlit Cloud
-geemap>=0.29.0
-folium>=0.14.0
-streamlit-folium>=0.15.0
-ipyleaflet>=0.17.0
-ipywidgets>=8.0.0
-
-# Data processing
-pandas>=2.0.0
-
-# Essential geospatial dependencies
-pyproj>=3.4.0
-shapely>=2.0.0
+# Minimal requirements for Streamlit Cloud
+streamlit
+earthengine-api
+google-auth
+geemap
+folium
+streamlit-folium
+pandas
